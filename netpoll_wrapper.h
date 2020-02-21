@@ -46,7 +46,7 @@ struct netpoll_wrapper
 	struct queued_arp_reply pending_arp_replies[4];
 };
 
-struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int localPort, const char *pOptionalLocalIp);
+struct netpoll_wrapper *netpoll_wrapper_create(const char *device_name, int localPort, const char *pOptionalLocalIp);
 void netpoll_wrapper_free(struct netpoll_wrapper *pWrapper);
 void netpoll_wrapper_send_reply(struct netpoll_wrapper *pWrapper, const void *pData, int dataSize);
 void netpoll_wrapper_poll(struct netpoll_wrapper *pWrapper);

@@ -22,9 +22,9 @@ static rx_handler_result_t netpoll_wrapper_rx_handler(struct sk_buff **pskb);
 
 static void hook_receive_skb(void *pContext, struct sk_buff *pSkb);
 
-struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int localPort, const char *pOptionalLocalIp)
+struct netpoll_wrapper *netpoll_wrapper_create(const char *device_name, int localPort, const char *pOptionalLocalIp)
 {
-	struct net_device *pDevice;
+	struct net_device *device;
 	struct netpoll_wrapper *pResult;
 	int localIp;
 	int err;
@@ -35,16 +35,16 @@ struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int loca
         return NULL;
     }
 
-	if (!pDeviceName || !localPort)
+	if (!device_name || !localPort)
 	{
 		printk(KERN_ERR "kgdboe: cannot create a netpoll wrapper without a device name\n");
 		return NULL;
 	}
 
-	pDevice = dev_get_by_name(&init_net, pDeviceName);
-	if (!pDevice)
+	device = dev_get_by_name(&init_net, device_name);
+	if (!device)
 	{
-		printk(KERN_ERR "kgdboe: Cannot find network device by name: %s\n", pDeviceName);
+		printk(KERN_ERR "kgdboe: Cannot find network device by name: %s\n", device_name);
 		return NULL;
 	}
 
@@ -60,18 +60,18 @@ struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int loca
 	}
 	else
 	{
-		if (!pDevice->ip_ptr)
+		if (!device->ip_ptr)
 		{
-			printk(KERN_ERR "kgdboe: %s does not have an in_device associated. Cannot get default IP address.\n", pDeviceName);
+			printk(KERN_ERR "kgdboe: %s does not have an in_device associated. Cannot get default IP address.\n", device_name);
 			return NULL;
 		}
-		if (!pDevice->ip_ptr->ifa_list)
+		if (!device->ip_ptr->ifa_list)
 		{
-			printk(KERN_ERR "kgdboe: %s does not have a in_ifaddr struct associated. Cannot get default IP address.\n", pDeviceName);
+			printk(KERN_ERR "kgdboe: %s does not have a in_ifaddr struct associated. Cannot get default IP address.\n", device_name);
 			return NULL;
 		}
 
-		localIp = pDevice->ip_ptr->ifa_list->ifa_local;
+		localIp = device->ip_ptr->ifa_list->ifa_local;
 	}
 
 	pResult = (struct netpoll_wrapper *)kmalloc(sizeof(struct netpoll_wrapper), GFP_KERNEL);
@@ -102,11 +102,11 @@ struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int loca
 #endif
 
 	rtnl_lock();
-	err = netdev_rx_handler_register(pDevice, netpoll_wrapper_rx_handler, pResult);
+	err = netdev_rx_handler_register(device, netpoll_wrapper_rx_handler, pResult);
 	rtnl_unlock();
 	if (err < 0)
 	{
-		printk(KERN_ERR "kgdboe: Failed to register rx handler for %s, code %d\n", pDeviceName, err);
+		printk(KERN_ERR "kgdboe: Failed to register rx handler for %s, code %d\n", device_name, err);
 		netpoll_wrapper_free(pResult);
 		return NULL;
 	}
@@ -114,9 +114,9 @@ struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int loca
 	register_tracepoint_wrapper(netif_receive_skb, hook_receive_skb, pResult);
 	pResult->tracepoint_registered = true;
 
-	pResult->pDeviceWithHandler = pDevice;
+	pResult->pDeviceWithHandler = device;
 
-	strncpy(pResult->netpoll_obj.dev_name, pDeviceName, sizeof(pResult->netpoll_obj.dev_name));
+	strncpy(pResult->netpoll_obj.dev_name, device_name, sizeof(pResult->netpoll_obj.dev_name));
 	pResult->netpoll_obj.name = "kgdboe";
 	pResult->netpoll_obj.local_port = localPort;
 	memset(pResult->netpoll_obj.remote_mac, 0xFF, sizeof(pResult->netpoll_obj.remote_mac));
@@ -124,7 +124,7 @@ struct netpoll_wrapper *netpoll_wrapper_create(const char *pDeviceName, int loca
 	err = netpoll_setup(&pResult->netpoll_obj);
 	if (err < 0)
 	{
-		printk(KERN_ERR "kgdboe: Failed to setup netpoll for %s, code %d\n", pDeviceName, err);
+		printk(KERN_ERR "kgdboe: Failed to setup netpoll for %s, code %d\n", device_name, err);
 		netpoll_wrapper_free(pResult);
 		return NULL;
 	}
