@@ -89,12 +89,7 @@ static struct nethook nethook;
 	spin_unlock(&nethook.netdev_api_lock);	\
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
-DECLARE_NET_API_HOOK2(ndo_get_stats64, struct rtnl_link_stats64*, struct net_device *, dev, struct rtnl_link_stats64 *, storage)
-#else
 DECLARE_NET_API_HOOK2V(ndo_get_stats64, void, struct net_device *, dev, struct rtnl_link_stats64 *, storage)
-#endif
-    
 DECLARE_NET_API_HOOK1(ndo_get_stats, struct net_device_stats*, struct net_device *, dev)
 
 typedef int (*PSET_MEMORY_RW)(unsigned long, int);
@@ -310,10 +305,6 @@ void nethook_release_relevant_resources()
 
 	irqsync_resume_irqs(nethook.irqsync);
 }
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,13,0)
-#define preempt_count_set(val) preempt_count() = val
-#endif
 
 void nethook_netpoll_work_starting()
 {

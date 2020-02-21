@@ -32,20 +32,6 @@ static int poll_one_napi(struct napi_struct *napi, int budget)
 	return budget - work;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,10,0)
-static void poll_napi(struct net_device *dev, int budget)
-{
-	struct napi_struct *napi;
-
-	list_for_each_entry(napi, &dev->napi_list, dev_list) {
-		if (napi->poll_owner != smp_processor_id() &&
-			spin_trylock(&napi->poll_lock)) {
-			budget = poll_one_napi(napi, budget);
-			spin_unlock(&napi->poll_lock);
-		}
-	}
-}
-#else
 static void __attribute__((optimize("O2", "-fno-omit-frame-pointer"))) poll_napi(struct net_device *dev, int budget)
 {
     struct napi_struct *napi;
@@ -58,7 +44,6 @@ static void __attribute__((optimize("O2", "-fno-omit-frame-pointer"))) poll_napi
         }
     }
 }
-#endif
 
 void netpoll_poll_dev_copy(struct net_device *dev, void(*zap_completion_queue)(void))
 {

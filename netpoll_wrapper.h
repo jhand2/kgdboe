@@ -5,15 +5,7 @@
 
 typedef void(*pnetpoll_wrapper_rx_handler)(void *pContext, int port, char *msg, int len);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,15,0)
-#define NETPOLL_POLL_DEV_USABLE
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0)
-#define ip_addr_as_int(addr) (addr)
-#else
 #define ip_addr_as_int(addr) ((addr).ip)
-#endif
 
 struct queued_arp_reply
 {
